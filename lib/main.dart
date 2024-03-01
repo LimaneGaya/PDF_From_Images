@@ -4,6 +4,8 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:reorderable_grid_view/reorderable_grid_view.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 
 void main() {
   runApp(const MyApp());
@@ -40,6 +42,8 @@ class _MainScreemState extends State<MainScreen> {
   }
 
   void onDragDone(DropDoneDetails detail) {
+    detail.files
+        .retainWhere((f) => f.path.endsWith('.jpg') || f.path.endsWith('.png'));
     setState(() {
       _files.addAll(detail.files);
     });
@@ -54,6 +58,25 @@ class _MainScreemState extends State<MainScreen> {
     crossAxisSpacing: 5,
     mainAxisSpacing: 5,
   );
+
+  void export() async {
+    final pdf = pw.Document();
+    for (var f in _files) {
+      final image = pw.MemoryImage(File(f.path).readAsBytesSync());
+      pdf.addPage(
+        pw.Page(
+          margin: pw.EdgeInsets.zero,
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) {
+            return pw.Image(image); // Center
+          },
+        ),
+      );
+    }
+    final file = File("example.pdf");
+    await file.writeAsBytes(await pdf.save());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -136,8 +159,8 @@ class _MainScreemState extends State<MainScreen> {
           ),
           const SizedBox(height: 10),
           FloatingActionButton(
+            onPressed: export,
             child: const Icon(Icons.output),
-            onPressed: () {},
           ),
         ],
       ),
